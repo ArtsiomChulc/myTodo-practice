@@ -6,6 +6,8 @@ import { Todolist } from './Todolist/Todolist';
 
 function App() {
 
+  const [error, setError] = useState<boolean>(false)
+
 
   let [infoArr, setInfoArr] = useState(
     [
@@ -35,8 +37,14 @@ function App() {
   }
 
   const callBackInput = (title: string) => {
-    let newTask = { id: v1(), title: title, isDone: false }
-    setmyTasks([newTask, ...myTasks])
+    if (title.length > 0) {
+      let newTask = { id: v1(), title: title, isDone: false }
+      setmyTasks([newTask, ...myTasks])
+    } else {
+      setError(true)
+    }
+
+
   }
 
   const changeStatusCheckBox = (infoId: string, newIsDone: boolean) => {
@@ -50,7 +58,10 @@ function App() {
   return (
     <div className="App">
       <Todolist changeStatusCheckBox={changeStatusCheckBox} infoArr={infoArr} callBack={removeTask} title={"What to learn"} />
-      <MyTodoList changeStatusMyToDo={changeStatusMyToDo} callBackInput={callBackInput} removeMyTask={removeMyTask} myTasks={myTasks} />
+      <MyTodoList name={'Список дел'} setError={setError}
+        error={error} changeStatusMyToDo={changeStatusMyToDo}
+        callBackInput={callBackInput} removeMyTask={removeMyTask}
+        myTasks={myTasks} />
     </div>
   );
 }

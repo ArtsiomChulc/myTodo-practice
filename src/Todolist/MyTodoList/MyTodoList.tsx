@@ -2,10 +2,13 @@ import React, { ChangeEvent, useState, KeyboardEvent } from 'react';
 import s from './myTodoList.module.css'
 
 type PropsType = {
+	name: string
 	myTasks: TaskPropsType[]
 	removeMyTask: (id: string) => void
 	callBackInput: (title: string) => void
 	changeStatusMyToDo: (taskId: string, newIsDone: boolean) => void
+	error: boolean
+	setError: (x: boolean) => void
 }
 
 type TaskPropsType = {
@@ -15,28 +18,42 @@ type TaskPropsType = {
 }
 
 
-export const MyTodoList = (props: PropsType) => {
+export const MyTodoList: React.FC<PropsType> = (
+	{
+		name,
+		myTasks,
+		removeMyTask,
+		callBackInput,
+		...restProps
+	}
+) => {
+
 	let [filterName, setFilterName] = useState<string>('All')
 	let [title, setTitle] = useState('')
+
+	const styleEroorBlock = `${restProps.error ? s.errorBlock : ''}`
+	const elementErrorBlock = restProps.error && <div className={styleEroorBlock}>Введите задачу...</div>
 
 	const filterTasks = (name: string) => {
 		setFilterName(name)
 	}
 
-	let filteredTasks = props.myTasks
+	let filteredTasks = myTasks
 	if (filterName === 'Active') {
-		filteredTasks = props.myTasks.filter(el => !el.isDone)
+		filteredTasks = myTasks.filter(el => !el.isDone)
 	}
 	if (filterName === 'Completed') {
-		filteredTasks = props.myTasks.filter(el => el.isDone)
+		filteredTasks = myTasks.filter(el => el.isDone)
 	}
 
 	const onChangeHandler = (e: ChangeEvent<HTMLInputElement>) => {
 		setTitle(e.currentTarget.value)
+		restProps.error && restProps.setError(false)
 	}
 
 	const addTask = (title: string) => {
-		props.callBackInput(title)
+		const titleTrim = title.trim()
+		callBackInput(titleTrim)
 		setTitle('')
 	}
 	const onKeyDownHandler = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -47,32 +64,35 @@ export const MyTodoList = (props: PropsType) => {
 
 
 
+
+
 	const element = filteredTasks.map(el => {
-		const removeMyTask = () => {
-			props.removeMyTask(el.id)
+		const removeMyTaskCB = () => {
+			removeMyTask(el.id)
 		}
 		const changeStatus = (e: ChangeEvent<HTMLInputElement>) => {
-			props.changeStatusMyToDo(el.id, e.currentTarget.checked)
+			restProps.changeStatusMyToDo(el.id, e.currentTarget.checked)
 		}
 		return (
 			<li key={el.id}>
 				<input onChange={changeStatus} type="checkbox" checked={el.isDone} />
 				{el.title}
-				<button onClick={removeMyTask}> ✖️ </button>
+				<button onClick={removeMyTaskCB}> ✖️ </button>
 			</li>
 		)
 	})
 	return (
 		<div className={s.wrapMyTodo}>
-			<h4>Список дел</h4>
+			<h2>{name}</h2>
 			<input value={title} onKeyDown={onKeyDownHandler} onChange={onChangeHandler} />
-			<button onClick={() => addTask(title)}>Add</button>
+			<button disabled={title.length === 0} onClick={() => addTask(title)}>Add</button>
+			{elementErrorBlock}
 			<ul>
 				{element}
 			</ul>
-			<button onClick={() => filterTasks('All')}>All</button>
-			<button onClick={() => filterTasks('Active')}>Active</button>
-			<button onClick={() => filterTasks('Completed')}>Completed</button>
+			<button className={filterName === 'All' ? s.activeBtn : ''} onClick={() => filterTasks('All')}>All</button>
+			<button className={filterName === 'Active' ? s.activeBtn : ''} onClick={() => filterTasks('Active')}>Active</button>
+			<button className={filterName === 'Completed' ? s.activeBtn : ''} onClick={() => filterTasks('Completed')}>Completed</button>
 		</div>
 	)
 }
