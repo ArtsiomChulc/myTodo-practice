@@ -1,69 +1,127 @@
 import React, { useState } from 'react';
-import { v1 } from 'uuid';
 import './App.css';
-import { MyTodoList } from './Todolist/MyTodoList/MyTodoList';
-import { Todolist } from './Todolist/Todolist';
+import TodoList, { TaskType } from "./TodoList";
+import { v1 } from "uuid";
 
-function App() {
+// create
+// read
+// update
+// delete
+// CRUD operations
+// interface => GUI (CLI, VUI, ....)
 
-  const [error, setError] = useState<boolean>(false)
+export type FilterValuesType = "all" | "active" | "completed"
+export type TodoListType = {
+    id: string
+    title: string
+    filter: FilterValuesType
+}
+
+type TaskStateType = {
+    [TodoListId: string]: Array<TaskType>
+}
 
 
-  let [infoArr, setInfoArr] = useState(
-    [
-      { id: v1(), title: 'HTML & CSS', isDone: true },
-      { id: v1(), title: 'JavaScript', isDone: true },
-      { id: v1(), title: 'React', isDone: false },
-      { id: v1(), title: 'Redux', isDone: false },
-      { id: v1(), title: 'Angular', isDone: false },
-      { id: v1(), title: 'BackEnd', isDone: false },
+function App(): JSX.Element {
+
+    const todoListId_1 = v1()
+    const todoListId_2 = v1()
+    const [todoLists, setTodoLists] = useState<Array<TodoListType>>([
+        { id: todoListId_1, title: "What to learn", filter: "all" },
+        { id: todoListId_2, title: "What to bye", filter: "all" }
     ])
-  let [myTasks, setmyTasks] = useState(
-    [
-      { id: v1(), title: 'Купить хлеб', isDone: false },
-      { id: v1(), title: 'Купить молоко', isDone: false },
-      { id: v1(), title: 'Купить сыр', isDone: false },
-      { id: v1(), title: 'Купить масло', isDone: false },
-      { id: v1(), title: 'Убрать квартиру', isDone: false },
-      { id: v1(), title: 'Сделать уроки', isDone: false },
-    ])
+    const [tasks, setTasks] = useState<TaskStateType>({
+        [todoListId_1]: [
+            { id: v1(), title: "HTML & CSS", isDone: true },
+            { id: v1(), title: "CSS & SCSS", isDone: true },
+            { id: v1(), title: "ES6/TS", isDone: false },
+            { id: v1(), title: "REDUX", isDone: false },
+        ],
+        [todoListId_2]: [
+            { id: v1(), title: "Water", isDone: true },
+            { id: v1(), title: "Bread", isDone: true },
+            { id: v1(), title: "Salt", isDone: false },
+            { id: v1(), title: "Beer", isDone: false },
+        ],
+    })
 
-  const removeMyTask = (id: string) => {
-    setmyTasks(myTasks.filter(el => el.id !== id))
-  }
+    const removeTask = (taskId: string, todoListId: string) => {
+        const tasksForUpdate: Array<TaskType> = tasks[todoListId]
+        const resultOfUpdate: Array<TaskType> = tasksForUpdate.filter((task: TaskType) => task.id !== taskId)
+        const copyTasks = { ...tasks }
+        copyTasks[todoListId] = resultOfUpdate
+        setTasks(copyTasks)
 
-  const removeTask = (id: string) => {
-    setInfoArr(infoArr.filter(el => el.id !== id))
-  }
+        // setTasks(tasks.filter((task) => task.id !== taskId))
+    }
+    const addTask = (title: string, todoListId: string) => {
+        const newTask: TaskType = { id: v1(), title, isDone: false }
+        const tasksForUpdate: Array<TaskType> = tasks[todoListId]
+        const resultOfUpdate: Array<TaskType> = [newTask, ...tasksForUpdate]
+        const copyTasks = { ...tasks }
+        copyTasks[todoListId] = resultOfUpdate
+        setTasks(copyTasks)
+        // const newTask: TaskType = {
+        //     id: v1(), title: title, isDone: false
+        // }
+        // setTasks([newTask, ...tasks])
 
-  const callBackInput = (title: string) => {
-    if (title.length > 0) {
-      let newTask = { id: v1(), title: title, isDone: false }
-      setmyTasks([newTask, ...myTasks])
-    } else {
-      setError(true)
+        setTasks({ ...tasks, [todoListId]: [newTask, ...tasks[todoListId]] })
+    }
+    const changeTaskStatus = (taskId: string, todoListId: string, newIsDone: boolean) => {
+        setTasks({ ...tasks, [todoListId]: tasks[todoListId].map(t => t.id === taskId ? { ...t, isDone: newIsDone } : t) })
+        // setTasks(tasks.map(t => t.id === taskId ? { ...t, isDone: newIsDone } : t))
+    }
+
+    const [filter, setFilter] = useState<FilterValuesType>("all")
+
+    const changeTodoListFilter = (filter: FilterValuesType, todoListId: string) => {
+        setTodoLists(todoLists.map(tl => tl.id === todoListId ? { ...tl, filter: filter } : tl))
+
+        // setFilter(filter)
+    }
+
+    const removeTodoList = (todoListId: string) => {
+        setTodoLists(todoLists.filter(tl => tl.id !== todoListId))
+        delete tasks[todoListId]
+    }
+
+    const getFilteredTasksForRender = (tasksList: Array<TaskType>, filterValue: FilterValuesType) => {
+        switch (filterValue) {
+            case "active":
+                return tasksList.filter(t => !t.isDone)
+            case "completed":
+                return tasksList.filter(t => t.isDone)
+            default:
+                return tasksList
+        }
     }
 
 
-  }
+    const todoListsComponents = todoLists.map(tl => {
+        const tasksForRender: Array<TaskType> = getFilteredTasksForRender(tasks[tl.id], tl.filter)
+        return (
+            <TodoList
+                key={tl.id}
+                todoListId={tl.id}
+                removeTask={removeTask}
+                title={tl.title}
+                tasks={tasksForRender}
+                filter={tl.filter}
+                addTask={addTask}
+                changeTaskStatus={changeTaskStatus}
+                changeTodoListFilter={changeTodoListFilter}
+                removeTodoList={removeTodoList}
+            />
+        )
+    })
 
-  const changeStatusCheckBox = (infoId: string, newIsDone: boolean) => {
-    setInfoArr(infoArr.map(el => el.id === infoId ? { ...el, isDone: newIsDone } : el))
-  }
 
-  const changeStatusMyToDo = (taskId: string, newIsDone: boolean) => {
-    setmyTasks(myTasks.map(task => task.id === taskId ? { ...task, isDone: newIsDone } : task))
-  }
-
-  return (
-    <div className="App">
-      <Todolist changeStatusCheckBox={changeStatusCheckBox} infoArr={infoArr} callBack={removeTask} title={"What to learn"} />
-      <MyTodoList name={'Список дел'} setError={setError}
-        error={error} changeStatusMyToDo={changeStatusMyToDo}
-        callBackInput={callBackInput} removeMyTask={removeMyTask}
-        myTasks={myTasks} />
-    </div>
-  );
+    return (
+        <div className="App">
+            {todoListsComponents}
+        </div>
+    );
 }
 
 export default App;
